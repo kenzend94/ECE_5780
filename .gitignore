@@ -1,1 +1,10 @@
-*.docx
+# *.docx
+Prelab*.docx
+prelab*.docx
+Prelab*.pdf
+prelab*.pdf
+
+Postlab*.docx
+postlab*.docx
+Postlab*.pdf
+postlab*.pdf
