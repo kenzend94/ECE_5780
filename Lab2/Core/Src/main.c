@@ -50,7 +50,7 @@ int main(void)
   NVIC_SetPriority(EXTI0_1_IRQn, 3);
 
   // changes the SysTick interrupt priority to 2 (medium priority)
-  // NVIC_SetPriority(SysTick_IRQn, 2);
+  NVIC_SetPriority(SysTick_IRQn, 2);
 
   // clear mode bits for PC6, 7, 8, 9
   GPIOC->MODER &= ~(GPIO_MODER_MODER6_Msk | GPIO_MODER_MODER7_Msk |
