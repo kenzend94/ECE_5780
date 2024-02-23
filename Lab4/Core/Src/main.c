@@ -43,13 +43,23 @@ int main(void)
   USART3->CR1 |= USART_CR1_UE;
 
   // Set the Baud rate for communication to be 115200 bits/second
-  USART3->BRR = 0x45;
+  USART3->BRR = HAL_RCC_GetHCLKFreq()/115200;
 
   // The USART starts with portions of the peripheral disabled for low-power use. You will need to 
   // enable the transmitter and receiver hardware.
   // Enable the transmission and reception of data
   USART3->CR1 |= USART_CR1_TE | USART_CR1_RE;
 
+  // Set the selected pins into alternate function mode and program the correct alternate function number into the GPIO AFR registers
+
+  // Set the mode of the pin to alternate function
+  GPIOB->MODER &= ~(GPIO_MODER_MODER10 | GPIO_MODER_MODER11);
+  GPIOB->MODER |= (GPIO_MODER_MODER10_1 | GPIO_MODER_MODER11_1);
+
+  // Set the alternate function for the pin
+  GPIOB->AFR[0] 
+
+  
   while (1)
   {
   }
