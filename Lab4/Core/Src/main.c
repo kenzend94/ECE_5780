@@ -19,9 +19,124 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f072xb.h"
+#include "stm32f0xx_hal_gpio_ex.h"
+
+
+/* Private variables ----------------------------------------------------------*/
+int flag;
+char color, mode;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+	
+/**
+ * @brief Read a character to Transmit Data Register
+ * @param c character it reads
+ */
+void transmit_char(char c)
+{
+  while (!(USART3->ISR & USART_ISR_TXE))
+  {
+  }
+  USART3->TDR = c;
+}
+
+/**
+ * @brief Read a string to Transmit Data Register
+ * @param s a C string
+ */
+void transmit_string(char *s)
+{
+  for (int i = 0; s[i] != '\0'; i++)
+    transmit_char(s[i]);
+}
+
+/**
+ * @brief Toggle LEDS from given r,g,b,o characters
+ *        4.1 section checkoff
+ */
+void receive_LED()
+{
+  if (USART3->ISR & USART_CR1_RXNEIE)
+  {
+    color = USART3->RDR;
+    switch (color)
+    {
+    case 'r':
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+      break;
+    case 'b':
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+      break;
+    case 'o':
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+      break;
+    case 'g':
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+      break;
+    }
+    if (color != 'r' && color != 'b' && color != 'g' && color != 'o')
+      transmit_string("Error");
+  }
+}
+
+/**
+ * @brief Toggle LEDS from given r,g,b,o characters with extra modes
+ *        4.2 section checkoff
+ */
+void USART3_4_IRQHandler()
+{
+  if (!flag)
+  {
+    color = USART3->RDR;
+    flag = 1;
+  }
+  else
+  {
+    switch (color)
+    {
+    case 'r':
+      mode = USART3->RDR;
+      if (mode == '0')
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+      else if (mode == '1')
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+      else if (mode == '2')
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+      break;
+    case 'b':
+      mode = USART3->RDR;
+      if (mode == '0')
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+      else if (mode == '1')
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
+      else if (mode == '2')
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+      break;
+    case 'o':
+      mode = USART3->RDR;
+      if (mode == '0')
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+      else if (mode == '1')
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+      else if (mode == '2')
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+      break;
+    case 'g':
+      mode = USART3->RDR;
+      if (mode == '0')
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+      else if (mode == '1')
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+      else if (mode == '2')
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+      break;
+    }
+    flag = 0;
+  }
+  if (color != 'r' && color != 'b' && color != 'g' && color != 'o')
+    transmit_string("Error");
+}
 
 /**
  * @brief  The application entry point.
@@ -29,39 +144,52 @@ void SystemClock_Config(void);
  */
 int main(void)
 {
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+  // Initialize Clock
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  RCC->APB1ENR = RCC_APB1ENR_USART3EN;
 
-  /* Configure the system clock */
-  SystemClock_Config();
-  // Enable the clock to the GPIOB peripheral
-  RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
+  // Initialize LED pins
+  GPIO_InitTypeDef initStr = {GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_6 | GPIO_PIN_7,
+                              GPIO_MODE_OUTPUT_PP,
+                              GPIO_SPEED_FREQ_LOW,
+                              GPIO_NOPULL};
+  HAL_GPIO_Init(GPIOC, &initStr); // Initialize LED pins
 
-  // Enable the system clock to the USART3 in the RCC peripheral.
-  RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
-  // Enable the USART3 peripheral
-  USART3->CR1 |= USART_CR1_UE;
+  /* 4.1 section */
+  GPIO_InitTypeDef initStr2 = {GPIO_PIN_10 | GPIO_PIN_11,
+                               GPIO_MODE_AF_PP,
+                               GPIO_SPEED_FREQ_LOW,
+                               GPIO_NOPULL};
+  HAL_GPIO_Init(GPIOB, &initStr2);
 
-  // Set the Baud rate for communication to be 115200 bits/second
-  USART3->BRR = HAL_RCC_GetHCLKFreq()/115200;
+  // Set alternate function
+  GPIOB->AFR[1] &= ~(GPIO_AFRH_AFSEL10_Msk | GPIO_AFRH_AFSEL11_Msk);
+  GPIOB->AFR[1] |= (GPIO_AF4_USART3 << GPIO_AFRH_AFSEL10_Pos) | 
+  (GPIO_AF4_USART3 << GPIO_AFRH_AFSEL11_Pos);
 
-  // The USART starts with portions of the peripheral disabled for low-power use. You will need to 
-  // enable the transmitter and receiver hardware.
-  // Enable the transmission and reception of data
-  USART3->CR1 |= USART_CR1_TE | USART_CR1_RE;
+  // GPIOB->AFR[1] |= (GPIO_AF4_USART3 << GPIO_AFRH_AFSEL10_Pos) | 
+  //                   (GPIO_AF4_USART3 << GPIO_AFRH_AFSEL11_Pos);
+  // set alternate function mode for pb10 and pb11
+  GPIOB->MODER |= GPIO_MODER_MODER10_1 | GPIO_MODER_MODER11_1;
 
-  // Set the selected pins into alternate function mode and program the correct alternate function number into the GPIO AFR registers
+  // Set up USART3
+  USART3->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE | USART_CR1_RXNEIE;
 
-  // Set the mode of the pin to alternate function
-  GPIOB->MODER &= ~(GPIO_MODER_MODER10 | GPIO_MODER_MODER11);
-  GPIOB->MODER |= (GPIO_MODER_MODER10_1 | GPIO_MODER_MODER11_1);
+  // Set baud rate
+  USART3->BRR = HAL_RCC_GetHCLKFreq() / 115200;
 
-  // Set the alternate function for the pin
-  GPIOB->AFR[0] 
+  // Enable USART3_4_IRQn
+  // NVIC_EnableIRQ(USART3_4_IRQn);
 
-  
+  // Enable global interrupts
   while (1)
   {
+    HAL_Delay(5000);
+    // transmit_string("CMD?");
+    // receive_LED();
+    // transmit_string("hello world\n");
+    transmit_char('r');
   }
 }
 
