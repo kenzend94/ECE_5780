@@ -23,6 +23,11 @@
 #include "main.h"
 #include "stm32f072xb.h"
 
+/* STM32F072RB
+PB10 -> TX
+PB11 -> RX */
+
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 

@@ -70,12 +70,12 @@ int main(void)
   // config PC6 and PC7 with no pull-up/down resistors
   GPIOC->PUPDR &= ~(GPIO_PUPDR_PUPDR6_Msk | GPIO_PUPDR_PUPDR7_Msk);
 
-  // Initialize one pin logic high and the other to low.
+  // // Initialize one pin logic high and the other to low.
   // GPIOC->BSRR = GPIO_BSRR_BS_8; // Set PC8 high
   // GPIOC->BSRR = GPIO_BSRR_BR_9; // Set PC9 low
 
-  GPIOC->BSRR = GPIO_BSRR_BS_6; // Set PC6 high
-  GPIOC->BSRR = GPIO_BSRR_BR_7; // Set PC7 low
+  // GPIOC->BSRR = GPIO_BSRR_BS_6; // Set PC6 high
+  // GPIOC->BSRR = GPIO_BSRR_BR_7; // Set PC7 low
 
   // Configure the button pin to input mode with the internal pull-down resistor enabled.
   // Set PA0 to input mode
@@ -94,50 +94,56 @@ int main(void)
   uint32_t debouncer = 0;
   uint32_t ledState = 0;
 
-  while (1)
-  {
-    // Shift the debouncer register and read the button state
-    debouncer = (debouncer << 1);
-
-    // check if button is set
-    int buttonPressed = GPIOA->IDR & 1;
-
-    // Check if the button is pressed
-    if (buttonPressed)
-    {
-      // Set lowest bit of bit-vector
-      debouncer |= 0x01;
-    }
-
-    if (debouncer == 0x7FFFFFFF)
-    {
-      if (ledState == 0)
-      {
-        GPIOC->BSRR = GPIO_BSRR_BR_6; // Set PC6 low
-        GPIOC->BSRR = GPIO_BSRR_BS_7; // Set PC7 high
-        ledState = 1;
-      }
-      else
-      {
-        GPIOC->BSRR = GPIO_BSRR_BS_6; // Set PC6 high
-        GPIOC->BSRR = GPIO_BSRR_BR_7; // Set PC7 low
-        ledState = 0;
-      }
-    }
-
-  }
-  HAL_Delay(1);
-
-  // Here is the first part 1.5.1: Configuring a GPIO Pin to Output and Blink an LED
 
   // while (1)
   // {
-  //   // Toggle PC6 and PC7 using ODR
-  //   GPIOC->ODR ^= (GPIO_ODR_6 | GPIO_ODR_7); // Toggle PC7 and PC6
+  //   // Shift the debouncer register and read the button state
+  //   debouncer = (debouncer << 1);
 
-  //   // Delay for a while to see the toggling effect
-  //   HAL_Delay(500); // Delay for 500 milliseconds
+  //   // check if button is set
+  //   int buttonPressed = GPIOA->IDR & 1;
+
+  //   // Check if the button is pressed
+  //   if (buttonPressed)
+  //   {
+  //     // Set lowest bit of bit-vector
+  //     debouncer |= 0x01;
+  //   }
+
+  //   if (debouncer == 0x7FFFFFFF)
+  //   {
+  //     if (ledState == 0)
+  //     {
+  //       GPIOC->BSRR = GPIO_BSRR_BR_6; // Set PC6 low
+  //       GPIOC->BSRR = GPIO_BSRR_BS_7; // Set PC7 high
+  //       ledState = 1;
+  //     }
+  //     else
+  //     {
+  //       GPIOC->BSRR = GPIO_BSRR_BS_6; // Set PC6 high
+  //       GPIOC->BSRR = GPIO_BSRR_BR_7; // Set PC7 low
+  //       ledState = 0;
+  //     }
+  //   }
+
   // }
+  // HAL_Delay(1);
+
+  // Here is the first part 1.5.1: Configuring a GPIO Pin to Output and Blink an LED
+
+  while (1)
+  {
+    // // Toggle PC6 and PC7 using ODR
+    // GPIOC->ODR ^= (GPIO_ODR_6 | GPIO_ODR_7); // Toggle PC7 and PC6
+
+    // // Delay for a while to see the toggling effect
+    // HAL_Delay(500); // Delay for 500 milliseconds
+
+    GPIOC->ODR |= (GPIO_ODR_6);
+    HAL_Delay(500);
+    GPIOC->ODR |= (GPIO_ODR_7);
+    HAL_Delay(500);
+  }
 }
 
 /**
